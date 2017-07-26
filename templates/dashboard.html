@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% set active_page = "dashboard" %}
+
+{% block head %}
+        {{ super() }}
+{% endblock %}
+
+{% block body %}
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="header">
+                        <h4 class="title">Temperature</h4>
+                        <p class="category">@ My Room</p>
+                    </div>
+                    <div class="content">
+                        <div class="footer">
+                            <hr>
+                            <div class="stats">
+                                <i class="fa fa-circle" style="color: #EF3B3A;"></i> Live Update
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="header">
+                        <h4 class="title">People</h4>
+                        <p class="category">@ My Room</p>
+                    </div>
+                    <div class="content">
+                        <div class="footer">
+                            <hr>
+                            <div class="stats">
+                                <i class="fa fa-circle" style="color: #EF3B3A;"></i> Live Update
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="header">
+                        <h4 class="title">Last Frame</h4>
+                        <p class="category">@ My Room</p>
+                    </div>
+                    <div class="content">
+                        <div class="footer">
+                            <hr>
+                            <div class="stats">
+                                <i class="fa fa-circle" style="color: #EF3B3A;"></i> Live Update
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

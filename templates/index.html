@@ -1,0 +1,25 @@
+{% extends "index_base.html" %}
+
+{% block forms %}
+<div class="thumbnail"><img src="{{ url_for('static', filename='media/login/user.png') }}" /></div>
+<form class="register-form" name="register_form" method=post>
+    {{ register_form.username }}
+    {{ register_form.email }}
+    {{ register_form.password }}
+    {{ register_form.confirm }}
+  <input type="button" value="Sign Up" id="submit_register"/>
+  <p class="message">Already registered? <span>Sign In</span></p>
+</form>
+<form class="login-form" name="login_form" method=post>
+      {{ login_form.username }}
+      {{ login_form.password }}
+  <input type="button" value="Log In" id="submit_login"/>
+  <p class="message">Not registered? <span>Create an account</span></p>
+</form>
+{% endblock %}
+{% block info %}
+    <div>
+        <i class="pe-7s-check" style="color:#4BB543; font-size:"></i>
+        <p> </p>
+    </div>
+{% endblock %}

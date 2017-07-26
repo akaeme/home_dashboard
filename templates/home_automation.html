@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% set active_page = "home_automation" %}
+
+{% block head %}
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='media/home_automation/favicon.ico') }}">
+        <title>Home Automation</title>
+{% endblock %}
+
+{% block body %}
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="header">
+                        <h4 class="title">Temperature</h4>
+                        <p class="category">@ My Room</p>
+                    </div>
+                    <div class="content">
+                        <div class="footer">
+                            <hr>
+                            <div class="stats">
+                                <i class="fa fa-thermometer-half" style="color: #EF3B3A;"></i> Live Updating
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
