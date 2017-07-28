@@ -4,7 +4,7 @@ from wtforms import Form, StringField, PasswordField, validators
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from threading import Thread
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -31,6 +31,8 @@ MESSAGE = 'Dear admin, \n\n\t%s ended up registering on the Home Dashboard Platf
 
 @app.route('/')
 def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     register_form = UserRegisterForm(request.form, prefix="register-form")
     login_form = UserLoginForm(request.form, prefix="login-form")
     return render_template('index.html', register_form=register_form, login_form=login_form)
@@ -87,11 +89,11 @@ def home_automation():
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
-    username = request.args.get('username', default='', type=str)
-    password = request.args.get('password', default='', type=str)
+    username = request.json['username']
+    password = request.json['password']
     form = UserLoginForm(prefix='login-form', username=username, password=password)
     validation = form.validate()
-    if request.method == 'GET' and validation:
+    if request.method == 'POST' and validation:
         results = User.query.filter_by(username=username).all()
         if len(results) > 0:
             user = results[0]
@@ -121,13 +123,13 @@ def send_email(subject, sender, recipients, text_body):
 
 @app.route('/register/', methods=['GET', 'POST'])
 def register():
-    username = request.args.get('username', default='', type=str)
-    password = request.args.get('password', default='', type=str)
-    confirm = request.args.get('confirm', default='', type=str)
-    email = request.args.get('email', '', type=str)
+    username = request.json['username']
+    password = request.json['password']
+    confirm = request.json['confirm']
+    email = request.json['email']
     form = UserRegisterForm(prefix='register-form', username=username, email=email, password=password, confirm=confirm)
     validation = form.validate()
-    if request.method == 'GET' and validation:
+    if request.method == 'POST' and validation:
         username = form.username.data
         email = form.email.data
         password = bcrypt.generate_password_hash(form.password.data)

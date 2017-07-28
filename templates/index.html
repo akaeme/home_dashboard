@@ -1,5 +1,7 @@
 {% extends "index_base.html" %}
+{% if current_user.is_authenticated %}
 
+{% endif %}
 {% block forms %}
 <div class="thumbnail"><img src="{{ url_for('static', filename='media/login/user.png') }}" /></div>
 <form class="register-form" name="register_form" method=post>
