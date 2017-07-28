@@ -1,11 +1,32 @@
 import os
-from flask import Flask, render_template, url_for, request, redirect, flash, session, jsonify
+from flask import Flask, render_template, url_for, request, redirect, jsonify
 from wtforms import Form, StringField, PasswordField, validators
-from functools import wraps
 from flask_bcrypt import Bcrypt
-from databaseUtils import connection
+from flask_mail import Mail, Message
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
+from threading import Thread
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = os.environ['HOMEDASHBOARD_MAIL']
+app.config['MAIL_PASSWORD'] = os.environ['HOMEDASHBOARD_MAIL_PASSWORD']
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///home_dashboard.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['SECRET_KEY'] = 'thisissecret'
+db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'index'
+
+MESSAGE = 'Dear admin, \n\n\t%s ended up registering on the Home Dashboard Platform, with the email %s.\n\t' \
+          'Please go to the platform and confirm the access request.\n\nRegards,\n\t Home Dashboard\n\t ' \
+          'homedashboard.no.reply@gmail.com'
 
 
 @app.route('/')
@@ -13,17 +34,6 @@ def index():
     register_form = UserRegisterForm(request.form, prefix="register-form")
     login_form = UserLoginForm(request.form, prefix="login-form")
     return render_template('index.html', register_form=register_form, login_form=login_form)
-
-
-def login_required(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in session:
-            return f(*args, **kwargs)
-        else:
-            flash('You need to login first.')
-            return redirect(url_for('index'))
-    return wrap
 
 
 @app.errorhandler(404)
@@ -47,7 +57,7 @@ def dated_url_for(endpoint, **values):
 
 
 @app.route('/dashboard/')
-#@login_required
+@login_required
 def dashboard():
     return render_template("dashboard.html")
 
@@ -58,11 +68,14 @@ def database():
 
 
 @app.route('/streaming/')
+# @login_required
 def streaming():
+    # logout_user()
     return render_template('streaming.html')
 
 
 @app.route('/room_control/')
+# @login_required
 def room_control():
     return render_template('room_control.html')
 
@@ -77,15 +90,33 @@ def login():
     username = request.args.get('username', default='', type=str)
     password = request.args.get('password', default='', type=str)
     form = UserLoginForm(prefix='login-form', username=username, password=password)
-    print(form.username.data)
-    print(form.password.data)
-    print(form.validate())
-    '''
-    if request.method == "POST" and form.validate():
-        username = form.username.data
-        email = form.password.data
-        print(username, email)'''
-    return jsonify(result='You are wise')
+    validation = form.validate()
+    if request.method == 'GET' and validation:
+        results = User.query.filter_by(username=username).all()
+        if len(results) > 0:
+            user = results[0]
+            if user.allowed:
+                if bcrypt.check_password_hash(user.password, password):
+                    login_user(user)
+                    return jsonify(success='')
+                else:
+                    return jsonify(error={'password':'Wrong password'})
+            else:
+                return jsonify(error={'authorization':'False'})
+        else:
+            return jsonify(error={'username': 'Username does not exist'})
+
+
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
+
+
+def send_email(subject, sender, recipients, text_body):
+    msg = Message(subject, sender=sender, recipients=recipients)
+    msg.body = text_body
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
 
 
 @app.route('/register/', methods=['GET', 'POST'])
@@ -95,36 +126,72 @@ def register():
     confirm = request.args.get('confirm', default='', type=str)
     email = request.args.get('email', '', type=str)
     form = UserRegisterForm(prefix='register-form', username=username, email=email, password=password, confirm=confirm)
-
-    '''if request.method == 'GET' and form.validate():
+    validation = form.validate()
+    if request.method == 'GET' and validation:
         username = form.username.data
         email = form.email.data
         password = bcrypt.generate_password_hash(form.password.data)
-        con = connection()
-        cursor = con.execute('SELECT * FROM admins WHERE username = ?', (username, ))
-        results = cursor.fetchall()
+        results = User.query.filter_by(username=username).all()
         if len(results) > 0:
-            return jsonify(invalid='username')
+            error_dict = {'username': 'Username already taken'}
+            return jsonify(error=error_dict)
         else:
-            con.execute('INSERT INTO admins(username, password, email) VALUES (?,?,?)', (username, password, email))
-            con.commit()
-            con.close()
-            return jsonify(confirm='email')'''
-    return jsonify(confirm='email')
-    # return redirect(url_for('dashboard'))
+            user = User(username=username, email=email, password=password, allowed=False)
+            db.session.add(user)
+            db.session.commit()
+            send_email(subject='New Register Request', sender=os.environ['HOMEDASHBOARD_MAIL'],
+                       recipients=[os.environ['HOMEDASHBOARD_MAIL']],
+                       text_body=MESSAGE % (username, email))
+            return jsonify(success='')
+    else:
+        error_dict = {}
+        error_keys = form.errors.keys()
+        if 'username' in error_keys:
+            error_dict['username'] = form.errors['username']
+        if 'email' in error_keys:
+            error_dict['email'] = form.errors['email']
+        if 'password' in error_keys:
+            error_dict['password'] = form.errors['password']
+        return jsonify(error=error_dict)
+
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(25), unique=True)
+    email = db.Column(db.String(50), unique=False)
+    password = db.Column(db.String(150))
+    allowed = db.Column(db.Boolean)
+
+    def __init__(self, username, email, password, allowed):
+        self.username = username
+        self.email = email
+        self.password = password
+        self.allowed = allowed
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 class UserLoginForm(Form):
-    username = StringField('Username', [validators.DataRequired(), validators.Length(min=4, max=25)],
+    username = StringField('Username', [validators.DataRequired(message='May not be null or empty'),
+                                        validators.Length(min=4, max=25)],
                            render_kw={"placeholder": "username"})
-    password = PasswordField('Password', [validators.DataRequired(), validators.Length(min=6, max=30)],
+    password = PasswordField('Password', [validators.DataRequired(message='May not be null or empty'),
+                                          validators.Length(min=6, max=30)],
                              render_kw={"placeholder": "password"})
 
 
 class UserRegisterForm(Form):
-    username = StringField('Username', [validators.DataRequired(), validators.Length(min=4, max=25)],
+    username = StringField('Username', [validators.DataRequired(message='May not be null or empty'),
+                                        validators.Length(min=4, max=25, message='Length must be between 4-25')],
                            render_kw={"placeholder": "username"})
-    email = StringField('Email Address', [validators.Length(min=6, max=50)], render_kw={"placeholder": "email"})
+    email = StringField('Email Address', [validators.Length(min=6, max=50, message='Invalid email')],
+                        render_kw={"placeholder": "email"})
     password = PasswordField('New Password', [
         validators.DataRequired(),
         validators.EqualTo('confirm', message='Passwords must match')

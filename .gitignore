@@ -99,3 +99,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+.idea/
+__init__.py
+home_dashboard.db
+

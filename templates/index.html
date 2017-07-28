@@ -19,7 +19,19 @@
 {% endblock %}
 {% block info %}
     <div>
-        <i class="pe-7s-check" style="color:#4BB543; font-size:"></i>
-        <p> </p>
+        <i class="pe-7s-check" style="color:#4BB543;"></i>
+        <p style="color: #4BB543;">Registration successful.</p>
+        <p id="info-paragraph">The administrator has been notified so you can access to home dashboard.</p>
+        <footer style="color:#969696">It may take a while. Please wait for an confirmation email.</footer>
+        <input type="button" value="Return to Home" id="btn_return"/>
+    </div>
+{% endblock %}
+{% block wait %}
+    <div>
+        <i class="pe-7s-hourglass" ></i>
+        <p>Please wait for the authorization.</p>
+        <p id="info-paragraph">The administrator has been notified so you can access to home dashboard.</p>
+        <footer style="color:#969696">It may take a while. You will get notified by email.</footer>
+        <input type="button" value="Return to Home" id="btn_home"/>
     </div>
 {% endblock %}
