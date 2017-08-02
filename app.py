@@ -5,9 +5,13 @@ from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from threading import Thread
+from threading import Thread, Timer
+from flask_socketio import SocketIO, send
+
 app = Flask(__name__)
+app.threaded = True
 bcrypt = Bcrypt(app)
+socket_io = SocketIO(app)
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
@@ -27,6 +31,17 @@ login_manager.login_view = 'index'
 MESSAGE = 'Dear admin, \n\n\t%s ended up registering on the Home Dashboard Platform, with the email %s.\n\t' \
           'Please go to the platform and confirm the access request.\n\nRegards,\n\t Home Dashboard\n\t ' \
           'homedashboard.no.reply@gmail.com'
+
+
+def print_it():
+    Timer(5.0, print_it).start()
+    socket_io.send('1')
+
+
+@socket_io.on('start')
+def handleMessage(msg):
+    print('Message: ', msg)
+    print_it()
 
 
 @app.route('/')
@@ -102,9 +117,9 @@ def login():
                     login_user(user)
                     return jsonify(success='')
                 else:
-                    return jsonify(error={'password':'Wrong password'})
+                    return jsonify(error={'password': 'Wrong password'})
             else:
-                return jsonify(error={'authorization':'False'})
+                return jsonify(error={'authorization': 'False'})
         else:
             return jsonify(error={'username': 'Username does not exist'})
 
@@ -202,4 +217,4 @@ class UserRegisterForm(Form):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, threaded=True)
+    socket_io.run(app, host='0.0.0.0', debug=True)
