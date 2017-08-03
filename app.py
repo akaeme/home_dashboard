@@ -1,4 +1,3 @@
-import os
 from flask import Flask, render_template, url_for, request, redirect, jsonify
 from wtforms import Form, StringField, PasswordField, validators
 from flask_bcrypt import Bcrypt
@@ -6,7 +5,13 @@ from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from threading import Thread, Timer
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO
+import os
+import RPi.GPIO as GPIO
+from .temperature import dht11
+import time
+import datetime
+
 
 app = Flask(__name__)
 app.threaded = True
@@ -32,16 +37,26 @@ MESSAGE = 'Dear admin, \n\n\t%s ended up registering on the Home Dashboard Platf
           'Please go to the platform and confirm the access request.\n\nRegards,\n\t Home Dashboard\n\t ' \
           'homedashboard.no.reply@gmail.com'
 
+# initialize GPIO
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+GPIO.cleanup()
 
-def print_it():
-    Timer(5.0, print_it).start()
-    socket_io.send('1')
+instance = dht11.DHT11(pin=17)
+
+def read_temperature():
+    result = instance.read()
+    if result.is_valid():
+        # print("Last valid input: " + str(datetime.datetime.now()))
+        socket_io.send({'temperature': result.temperature, 'humidity': result.humidity}, json=True)
+    Timer(2.0, read_temperature).start()
+
 
 
 @socket_io.on('start')
 def handleMessage(msg):
     print('Message: ', msg)
-    print_it()
+    read_temperature()
 
 
 @app.route('/')
