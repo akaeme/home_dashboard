@@ -4,6 +4,6 @@ socket.on('connect', function() {
     socket.emit('start', 'Connected')
     //socket.send('User has connected!');
 });
-socket.on('message', function(msg) {
+socket.on('values', function(msg) {
     console.log(msg);
 });

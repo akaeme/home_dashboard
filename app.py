@@ -8,7 +8,7 @@ from threading import Thread, Timer
 from flask_socketio import SocketIO
 import os
 import RPi.GPIO as GPIO
-from .temperature import dht11
+from temperature import dht11
 import time
 import datetime
 
@@ -48,7 +48,7 @@ def read_temperature():
     result = instance.read()
     if result.is_valid():
         # print("Last valid input: " + str(datetime.datetime.now()))
-        socket_io.send({'temperature': result.temperature, 'humidity': result.humidity}, json=True)
+        socket_io.emit('values', {'temperature':result.temperature, 'humidity':result.humidity})
     Timer(2.0, read_temperature).start()
 
 
