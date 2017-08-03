@@ -2,10 +2,12 @@ var g1;
 window.onload = function(){
     g1 = new JustGage({
       id: "g1",
-      value: 20,
+      value: 0,
       min: 0,
-      max: 100,
-      label: "celsius"
+      max: 45,
+      label: "Celsius",
+      levelColorsGradient: false,
+      width: 25
     });
 };
 var socket = io.connect('http://' + document.domain + ':' + location.port);
