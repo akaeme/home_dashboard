@@ -6,8 +6,12 @@ window.onload = function(){
       min: 0,
       max: 45,
       label: "Celsius",
-      levelColorsGradient: false,
-      width: 25
+      levelColors: [
+          "#00fff6",
+          "#ff00fc",
+          "#1200ff"
+        ],
+      gaugeWidthScale: 0.2
     });
 };
 var socket = io.connect('http://' + document.domain + ':' + location.port);
