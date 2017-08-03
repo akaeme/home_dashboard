@@ -48,7 +48,7 @@ def read_temperature():
     result = instance.read()
     if result.is_valid():
         # print("Last valid input: " + str(datetime.datetime.now()))
-        socket_io.emit('values', {'temperature':result.temperature, 'humidity':result.humidity})
+        socket_io.emit('values', {'temperature': result.temperature, 'humidity': result.humidity})
     Timer(2.0, read_temperature).start()
 
 
